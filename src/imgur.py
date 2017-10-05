@@ -13,6 +13,7 @@ IMGUR_BIN = "%s.sh" % APPINDICATOR_ID
 
 
 def quit(event):
+    Notify.uninit()
     Gtk.main_quit()
 
 
@@ -174,9 +175,6 @@ def main():
     except Exception as e:
         msg = "There was an error while checking for %s on your system:\n\n\"%s\""
         notify_send(msg % (APPINDICATOR_ID, str(e)), 'error')
-
-    # cleanup libnotify
-    Notify.uninit()
 
 
 if __name__ == "__main__":
