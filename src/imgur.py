@@ -153,7 +153,7 @@ def notify_send(msg, dialog_type='information'):
 
 def main():
     indicator = appindicator.Indicator.new(APPINDICATOR_ID,
-                                           os.path.abspath('imgur.svg'),
+                                           os.path.abspath(os.path.join('assets', 'imgur.svg')),
                                            appindicator.IndicatorCategory.SYSTEM_SERVICES)
     indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
     indicator.set_menu(build_menu())
