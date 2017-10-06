@@ -23,16 +23,14 @@ def screenshot(event):
 
     cmd = which(IMGUR_BIN)
     try:
-        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+        res = subprocess.check_call(cmd, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        msg = "Error while taking screenshot:\n\n\"%s\"" % str(e)
+        notify_send(msg, 'error')
     except Exception as e:
         msg = "Error while taking screenshot:\n\n\"%s\"" % str(e)
         notify_send(msg, 'error')
-        raise
-    output, error = res.communicate()
-    if error:
-        msg = "%s exited with %s:\n\n\"%s\"" % (IMGUR_BIN, res.returncode, error.strip())
-        notify_send(msg, 'error')
+    return
 
 
 def build_menu():
