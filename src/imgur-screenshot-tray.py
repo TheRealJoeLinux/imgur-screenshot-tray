@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
@@ -8,8 +9,8 @@ import subprocess
 from gi.repository import AppIndicator3 as appindicator, Gtk, Notify
 
 
-APPINDICATOR_ID = 'imgur-screenshot'
-IMGUR_BIN = "%s.sh" % APPINDICATOR_ID
+APPINDICATOR_ID = 'ImgurScreenshot'
+IMGUR_BIN = 'imgur-screenshot.sh'
 
 
 def quit(event):
@@ -20,10 +21,14 @@ def quit(event):
 def screenshot(event):
     global IMGUR_BIN
 
-    # this file must be in $PATH in order for it to be called this way
     cmd = which(IMGUR_BIN)
-    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
+    try:
+        res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    except Exception as e:
+        msg = "Error while taking screenshot:\n\n\"%s\"" % str(e)
+        notify_send(msg, 'error')
+        raise
     output, error = res.communicate()
     if error:
         msg = "%s exited with %s:\n\n\"%s\"" % (IMGUR_BIN, res.returncode, error.strip())
@@ -64,6 +69,10 @@ def which(name):
             exe_file = os.path.join(path, name)
             if is_exe(exe_file):
                 return exe_file
+        # check this dir, just in case
+        curdir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), name))
+        if is_exe(curdir_path):
+            return curdir_path
 
     # if we get here, `name` was not found in $PATH
     return None
@@ -102,22 +111,17 @@ def install_into(dir):
 
 
 def check_installation():
-    global APPINDICATOR_ID
     global IMGUR_BIN
 
     # check for the command in $PATH
     ready_for_use = True
     if not which(IMGUR_BIN):
-        # maybe check without the ".sh"?
         ready_for_use = False
-        if not which(APPINDICATOR_ID):
-            install_dir = "%s/.local/bin" % os.environ['HOME']
-            if not os.path.isdir(install_dir):
-                install_dir = os.environ['HOME']  # do what we can
-            install_into(install_dir)
-            ready_for_use = True  # if we got here, we're okay
-        else:
-            IMGUR_BIN = APPINDICATOR_ID  # call this instead
+        install_dir = "%s/.local/bin" % os.environ['HOME']
+        if not os.path.isdir(install_dir):
+            install_dir = os.environ['HOME']  # do what we can
+        install_into(install_dir)
+        ready_for_use = True  # if we got here, we're okay
     if ready_for_use:
         ready_for_use = check_deps()  # also check dependencies
     return ready_for_use
@@ -126,8 +130,11 @@ def check_installation():
 def check_deps():
     global IMGUR_BIN
 
-    cmd = "%s --check" % IMGUR_BIN
-    res = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+    cmd = which(IMGUR_BIN)
+    if not cmd:
+        # check relative dir if we installed it
+        cmd = os.path.abspath(os.path.join(os.path.dirname(__file__), IMGUR_BIN))
+    res = subprocess.Popen("%s --check" % cmd, shell=True, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
     output, error = res.communicate()
     deps_ok = False
